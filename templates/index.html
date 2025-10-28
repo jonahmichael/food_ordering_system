@@ -407,49 +407,158 @@
         
         /* Filter Section */
         .filter-section {
-            background: #fafafa;
-            padding: 20px 30px;
-            border-bottom: 1px solid #e0e0e0;
+            background: #f8f9fa;
+            padding: 15px 25px;
+            border-bottom: 1px solid #dee2e6;
         }
         
         .filter-form {
             max-width: 100%;
         }
         
-        .filter-row {
+        /* Search Bar */
+        .search-bar {
             display: flex;
-            gap: 20px;
-            align-items: flex-end;
-            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: center;
         }
         
-        .filter-group {
+        .search-input {
             flex: 1;
-            min-width: 180px;
-        }
-        
-        .filter-group label {
-            display: block;
-            margin-bottom: 6px;
-            color: #555;
-            font-weight: 500;
-            font-size: 13px;
-        }
-        
-        .filter-group select {
-            width: 100%;
-            padding: 10px 12px;
+            padding: 8px 14px;
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 14px;
-            background: white;
             transition: border-color 0.2s;
         }
         
-        .filter-group select:focus {
+        .search-input:focus {
             outline: none;
             border-color: #2c3e50;
         }
+        
+        .search-input::placeholder {
+            color: #999;
+        }
+        
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        
+        .filter-group-compact {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-group-compact label {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 500;
+            color: #555;
+            white-space: nowrap;
+        }
+        
+        .checkbox-inline {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .checkbox-label-compact {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .checkbox-label-compact input[type="checkbox"] {
+            cursor: pointer;
+        }
+        
+        .sort-controls-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .sort-controls-row label {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .sort-controls-row select {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            background: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        /* Checkbox Filters */
+        .checkbox-group {
+            min-width: 250px;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .checkbox-label:hover {
+            background: #f0f0f0;
+            border-color: #2c3e50;
+        }
+        
+        .checkbox-label input[type="checkbox"] {
+            cursor: pointer;
+        }
+        
+        .checkbox-label input[type="checkbox"]:checked + span,
+        .checkbox-label:has(input[type="checkbox"]:checked) {
+            background: #e8f4f8;
+            border-color: #2c3e50;
+            font-weight: 500;
+        }
+        
+        /* Grouped Data Section */
         
         /* Grouped Data Section */
         .grouped-data-section {
@@ -485,50 +594,76 @@
     <div class="container">
         <h1>Food Ordering System</h1>
         
-        <!-- Sorting and Grouping Controls -->
+        <!-- Search and Filter Controls -->
         <div class="filter-section">
-            <form method="GET" action="/" class="filter-form">
+            <form method="GET" action="/" class="filter-form" id="filterForm">
+                <!-- Search Bar -->
+                <div class="search-bar">
+                    <input type="text" name="search" id="searchInput" placeholder="Search menu items, restaurants, or descriptions..." 
+                           value="{{ search_term }}" class="search-input">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                    <a href="/" class="btn btn-secondary">Reset</a>
+                </div>
+                
+                <!-- Compact Filters in One Row -->
                 <div class="filter-row">
-                    <div class="filter-group">
-                        <label for="sort_by">Sort By:</label>
-                        <select name="sort_by" id="sort_by" onchange="this.form.submit()">
-                            <option value="default" {% if sort_by == 'default' %}selected{% endif %}>Default</option>
-                            <option value="price" {% if sort_by == 'price' %}selected{% endif %}>Price</option>
-                            <option value="restaurant" {% if sort_by == 'restaurant' %}selected{% endif %}>Restaurant</option>
-                            <option value="category" {% if sort_by == 'category' %}selected{% endif %}>Category</option>
-                            <option value="item_name" {% if sort_by == 'item_name' %}selected{% endif %}>Item Name</option>
-                            <option value="restaurant_name" {% if sort_by == 'restaurant_name' %}selected{% endif %}>Restaurant Name</option>
-                            <option value="rating" {% if sort_by == 'rating' %}selected{% endif %}>Rating</option>
-                            <option value="order_amount" {% if sort_by == 'order_amount' %}selected{% endif %}>Order Amount</option>
-                            <option value="order_status" {% if sort_by == 'order_status' %}selected{% endif %}>Order Status</option>
-                            <option value="order_date" {% if sort_by == 'order_date' %}selected{% endif %}>Order Date</option>
-                            <option value="delivery_status" {% if sort_by == 'delivery_status' %}selected{% endif %}>Delivery Status</option>
-                            <option value="driver_name" {% if sort_by == 'driver_name' %}selected{% endif %}>Driver Name</option>
-                        </select>
+                    <!-- Cuisine Type Filter -->
+                    <div class="filter-group-compact">
+                        <label>Cuisine:</label>
+                        <div class="checkbox-inline">
+                            {% for cuisine in all_cuisines[:6] %}
+                            <label class="checkbox-label-compact">
+                                <input type="checkbox" name="cuisine" value="{{ cuisine }}" 
+                                       {% if cuisine in cuisine_filter %}checked{% endif %}>
+                                {{ cuisine }}
+                            </label>
+                            {% endfor %}
+                        </div>
                     </div>
                     
-                    <div class="filter-group">
-                        <label for="order">Order:</label>
-                        <select name="order" id="order" onchange="this.form.submit()">
-                            <option value="ASC" {% if order == 'ASC' %}selected{% endif %}>Ascending ↑</option>
-                            <option value="DESC" {% if order == 'DESC' %}selected{% endif %}>Descending ↓</option>
-                        </select>
+                    <!-- Category Filter -->
+                    <div class="filter-group-compact">
+                        <label>Category:</label>
+                        <div class="checkbox-inline">
+                            {% for category in all_categories[:6] %}
+                            <label class="checkbox-label-compact">
+                                <input type="checkbox" name="category" value="{{ category }}" 
+                                       {% if category in category_filter %}checked{% endif %}>
+                                {{ category }}
+                            </label>
+                            {% endfor %}
+                        </div>
                     </div>
                     
-                    <div class="filter-group">
-                        <label for="group_by">Group By:</label>
-                        <select name="group_by" id="group_by" onchange="this.form.submit()">
-                            <option value="none" {% if group_by == 'none' %}selected{% endif %}>None</option>
-                            <option value="restaurant" {% if group_by == 'restaurant' %}selected{% endif %}>Restaurant</option>
-                            <option value="category" {% if group_by == 'category' %}selected{% endif %}>Category</option>
-                            <option value="delivery_status" {% if group_by == 'delivery_status' %}selected{% endif %}>Order Status</option>
-                            <option value="customer_orders" {% if group_by == 'customer_orders' %}selected{% endif %}>Customer Orders</option>
-                        </select>
-                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+                </div>
+                
+                <!-- Sort and Group Controls -->
+                <div class="sort-controls-row">
+                    <label>Sort By:</label>
+                    <select name="sort_by" id="sort_by">
+                        <option value="">None</option>
+                        <option value="price" {% if sort_by == 'price' %}selected{% endif %}>Price</option>
+                        <option value="restaurant" {% if sort_by == 'restaurant' %}selected{% endif %}>Restaurant</option>
+                        <option value="category" {% if sort_by == 'category' %}selected{% endif %}>Category</option>
+                        <option value="item_name" {% if sort_by == 'item_name' %}selected{% endif %}>Item Name</option>
+                    </select>
                     
-                    <div class="filter-group">
-                        <a href="/" class="btn btn-secondary" style="margin-top: 24px;">Reset Filters</a>
-                    </div>
+                    <label>Order:</label>
+                    <select name="order" id="order">
+                        <option value="ASC" {% if order == 'ASC' %}selected{% endif %}>ASC</option>
+                        <option value="DESC" {% if order == 'DESC' %}selected{% endif %}>DESC</option>
+                    </select>
+                    
+                    <label>Group By:</label>
+                    <select name="group_by" id="group_by">
+                        <option value="" {% if not group_by or group_by == 'none' %}selected{% endif %}>None</option>
+                        <option value="restaurant" {% if group_by == 'restaurant' %}selected{% endif %}>Restaurant</option>
+                        <option value="category" {% if group_by == 'category' %}selected{% endif %}>Category</option>
+                        <option value="delivery_status" {% if group_by == 'delivery_status' %}selected{% endif %}>Delivery Status</option>
+                    </select>
+                    
+                    <button type="submit" class="btn btn-primary btn-sm">Apply</button>
                 </div>
             </form>
         </div>

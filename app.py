@@ -33,6 +33,11 @@ def index():
         order = request.args.get('order', 'ASC')
         group_by = request.args.get('group_by', 'none')
         
+        # Get search and filter parameters
+        search_term = request.args.get('search', '').strip()
+        cuisine_filter = request.args.getlist('cuisine')
+        category_filter = request.args.getlist('category')
+        
         # Get all data for different tabs
         cursor.execute("SELECT * FROM Customers")
         customers = cursor.fetchall()
@@ -47,16 +52,46 @@ def index():
         restaurants = cursor.fetchall()
         session['last_query'] = restaurant_query
         
+        # Get all categories for filter checkboxes
+        cursor.execute("SELECT DISTINCT name FROM Categories ORDER BY name")
+        all_categories = [row['name'] for row in cursor.fetchall()]
+        
+        # Get all cuisine types for filter checkboxes
+        cursor.execute("SELECT DISTINCT cuisine_type FROM Restaurants WHERE cuisine_type IS NOT NULL ORDER BY cuisine_type")
+        all_cuisines = [row['cuisine_type'] for row in cursor.fetchall()]
+        
         cursor.execute("SELECT * FROM Categories")
         categories = cursor.fetchall()
         
-        # Menu Items with sorting
+        # Menu Items with sorting, search, and filters
         menu_query = """
-            SELECT mi.*, r.name AS restaurant_name, c.name AS category_name
+            SELECT mi.*, r.name AS restaurant_name, r.cuisine_type, c.name AS category_name
             FROM Menu_Items mi
             LEFT JOIN Restaurants r ON mi.restaurant_id = r.restaurant_id
             LEFT JOIN Categories c ON mi.category_id = c.category_id
+            WHERE 1=1
         """
+        query_params = []
+        
+        # Add search filter
+        if search_term:
+            menu_query += " AND (mi.name LIKE %s OR r.name LIKE %s OR mi.description LIKE %s)"
+            search_pattern = f"%{search_term}%"
+            query_params.extend([search_pattern, search_pattern, search_pattern])
+        
+        # Add cuisine filter
+        if cuisine_filter:
+            placeholders = ','.join(['%s'] * len(cuisine_filter))
+            menu_query += f" AND r.cuisine_type IN ({placeholders})"
+            query_params.extend(cuisine_filter)
+        
+        # Add category filter
+        if category_filter:
+            placeholders = ','.join(['%s'] * len(category_filter))
+            menu_query += f" AND c.name IN ({placeholders})"
+            query_params.extend(category_filter)
+        
+        # Add sorting
         if sort_by == 'price':
             menu_query += f" ORDER BY mi.price {order}"
         elif sort_by == 'restaurant':
@@ -65,9 +100,10 @@ def index():
             menu_query += f" ORDER BY c.name {order}"
         elif sort_by == 'item_name':
             menu_query += f" ORDER BY mi.name {order}"
-        cursor.execute(menu_query)
+        
+        cursor.execute(menu_query, query_params)
         menu_items = cursor.fetchall()
-        session['last_query'] = menu_query
+        session['last_query'] = menu_query % tuple(query_params) if query_params else menu_query
         
         # Orders with sorting
         order_query = """
@@ -161,6 +197,11 @@ def index():
                              sort_by=sort_by,
                              order=order,
                              group_by=group_by,
+                             search_term=search_term,
+                             cuisine_filter=cuisine_filter,
+                             category_filter=category_filter,
+                             all_cuisines=all_cuisines,
+                             all_categories=all_categories,
                              last_query=session.get('last_query', ''))
     return "Error connecting to the database."
 
@@ -486,34 +527,34 @@ def init_db():
             VALUES (%s, %s, %s, %s, %s)
         """, customers_data)
         
-        # Insert Restaurants (20+) - Indian Restaurant Names
+        # Insert Restaurants (20+) - Indian Restaurant Names with login credentials
         restaurants_data = [
-            ('Dominos Pizza', 'Shop 12, Phoenix Mall, Mumbai', '+91-022-12345678', 'Italian', 4.5),
-            ('McDonalds', 'MG Road, Delhi', '+91-011-23456789', 'Fast Food', 4.2),
-            ('Sushi Bay', 'Cyber Hub, Gurgaon', '+91-124-34567890', 'Japanese', 4.7),
-            ('Taco Bell', 'Connaught Place, Delhi', '+91-011-45678901', 'Mexican', 4.3),
-            ('Mainland China', 'Park Street, Kolkata', '+91-033-56789012', 'Chinese', 4.4),
-            ('Barbeque Nation', 'Indiranagar, Bangalore', '+91-080-67890123', 'Barbecue', 4.6),
-            ('Pizza Hut', 'Brigade Road, Bangalore', '+91-080-78901234', 'Italian', 4.5),
-            ('KFC', 'Banjara Hills, Hyderabad', '+91-040-89012345', 'Fast Food', 4.3),
-            ('Mainland Express', 'Anna Nagar, Chennai', '+91-044-90123456', 'Chinese', 4.4),
-            ('Burger King', 'Phoenix Mall, Mumbai', '+91-022-01234567', 'Fast Food', 4.2),
-            ('Barbeque Nation', 'Koramangala, Bangalore', '+91-080-12345678', 'Barbecue', 4.7),
-            ('Thai Pavilion', 'Vivanta Hotel, Delhi', '+91-011-23456780', 'Thai', 4.5),
-            ('Mainland China', 'Jubilee Hills, Hyderabad', '+91-040-34567891', 'Chinese', 4.4),
-            ('Cafe Delhi Heights', 'Rajouri Garden, Delhi', '+91-011-45678902', 'Multi-Cuisine', 4.6),
-            ('The Korean Restaurant', 'Vasant Kunj, Delhi', '+91-011-56789013', 'Korean', 4.5),
-            ('Cafe Mondegar', 'Colaba, Mumbai', '+91-022-67890124', 'Continental', 4.3),
-            ('Pho King Good', 'Hauz Khas, Delhi', '+91-011-78901235', 'Vietnamese', 4.4),
-            ('Texas Roadhouse', 'Cyber Hub, Gurgaon', '+91-124-89012346', 'American', 4.6),
-            ('Olive Bar & Kitchen', 'Mehrauli, Delhi', '+91-011-90123457', 'Italian', 4.7),
-            ('Socials', 'Hauz Khas, Delhi', '+91-011-01234568', 'Multi-Cuisine', 4.4),
-            ('Hard Rock Cafe', 'Worli, Mumbai', '+91-022-12345679', 'American', 4.5),
-            ('Subway', 'Sector 18, Noida', '+91-0120-23456780', 'Sandwiches', 4.2)
+            ('Dominos Pizza', 'Shop 12, Phoenix Mall, Mumbai', '+91-022-12345678', 'Italian', 4.5, 'restaurant1', 'password123'),
+            ('McDonalds', 'MG Road, Delhi', '+91-011-23456789', 'Fast Food', 4.2, 'restaurant2', 'password123'),
+            ('Sushi Bay', 'Cyber Hub, Gurgaon', '+91-124-34567890', 'Japanese', 4.7, 'restaurant3', 'password123'),
+            ('Taco Bell', 'Connaught Place, Delhi', '+91-011-45678901', 'Mexican', 4.3, 'restaurant4', 'password123'),
+            ('Mainland China', 'Park Street, Kolkata', '+91-033-56789012', 'Chinese', 4.4, 'restaurant5', 'password123'),
+            ('Barbeque Nation', 'Indiranagar, Bangalore', '+91-080-67890123', 'Barbecue', 4.6, 'restaurant6', 'password123'),
+            ('Pizza Hut', 'Brigade Road, Bangalore', '+91-080-78901234', 'Italian', 4.5, 'restaurant7', 'password123'),
+            ('KFC', 'Banjara Hills, Hyderabad', '+91-040-89012345', 'Fast Food', 4.3, 'restaurant8', 'password123'),
+            ('Mainland Express', 'Anna Nagar, Chennai', '+91-044-90123456', 'Chinese', 4.4, 'restaurant9', 'password123'),
+            ('Burger King', 'Phoenix Mall, Mumbai', '+91-022-01234567', 'Fast Food', 4.2, 'restaurant10', 'password123'),
+            ('Barbeque Nation', 'Koramangala, Bangalore', '+91-080-12345678', 'Barbecue', 4.7, 'restaurant11', 'password123'),
+            ('Thai Pavilion', 'Vivanta Hotel, Delhi', '+91-011-23456780', 'Thai', 4.5, 'restaurant12', 'password123'),
+            ('Mainland China', 'Jubilee Hills, Hyderabad', '+91-040-34567891', 'Chinese', 4.4, 'restaurant13', 'password123'),
+            ('Cafe Delhi Heights', 'Rajouri Garden, Delhi', '+91-011-45678902', 'Multi-Cuisine', 4.6, 'restaurant14', 'password123'),
+            ('The Korean Restaurant', 'Vasant Kunj, Delhi', '+91-011-56789013', 'Korean', 4.5, 'restaurant15', 'password123'),
+            ('Cafe Mondegar', 'Colaba, Mumbai', '+91-022-67890124', 'Continental', 4.3, 'restaurant16', 'password123'),
+            ('Pho King Good', 'Hauz Khas, Delhi', '+91-011-78901235', 'Vietnamese', 4.4, 'restaurant17', 'password123'),
+            ('Texas Roadhouse', 'Cyber Hub, Gurgaon', '+91-124-89012346', 'American', 4.6, 'restaurant18', 'password123'),
+            ('Olive Bar & Kitchen', 'Mehrauli, Delhi', '+91-011-90123457', 'Italian', 4.7, 'restaurant19', 'password123'),
+            ('Socials', 'Hauz Khas, Delhi', '+91-011-01234568', 'Multi-Cuisine', 4.4, 'restaurant20', 'password123'),
+            ('Hard Rock Cafe', 'Worli, Mumbai', '+91-022-12345679', 'American', 4.5, 'restaurant21', 'password123'),
+            ('Subway', 'Sector 18, Noida', '+91-0120-23456780', 'Sandwiches', 4.2, 'restaurant22', 'password123')
         ]
         cursor.executemany("""
-            INSERT INTO Restaurants (name, address, phone_number, cuisine_type, rating) 
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO Restaurants (name, address, phone_number, cuisine_type, rating, username, password) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """, restaurants_data)
         
         # Insert Categories (20+)
