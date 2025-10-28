@@ -28,35 +28,124 @@ def index():
     if conn:
         cursor = conn.cursor(dictionary=True)
         
+        # Get sorting parameters
+        sort_by = request.args.get('sort_by', 'default')
+        order = request.args.get('order', 'ASC')
+        group_by = request.args.get('group_by', 'none')
+        
         # Get all data for different tabs
         cursor.execute("SELECT * FROM Customers")
         customers = cursor.fetchall()
         
-        cursor.execute("SELECT * FROM Restaurants")
+        # Restaurants with sorting
+        restaurant_query = "SELECT * FROM Restaurants"
+        if sort_by == 'restaurant_name':
+            restaurant_query += f" ORDER BY name {order}"
+        elif sort_by == 'rating':
+            restaurant_query += f" ORDER BY rating {order}"
+        cursor.execute(restaurant_query)
         restaurants = cursor.fetchall()
+        session['last_query'] = restaurant_query
         
         cursor.execute("SELECT * FROM Categories")
         categories = cursor.fetchall()
         
-        cursor.execute("""
+        # Menu Items with sorting
+        menu_query = """
             SELECT mi.*, r.name AS restaurant_name, c.name AS category_name
             FROM Menu_Items mi
             LEFT JOIN Restaurants r ON mi.restaurant_id = r.restaurant_id
             LEFT JOIN Categories c ON mi.category_id = c.category_id
-        """)
+        """
+        if sort_by == 'price':
+            menu_query += f" ORDER BY mi.price {order}"
+        elif sort_by == 'restaurant':
+            menu_query += f" ORDER BY r.name {order}"
+        elif sort_by == 'category':
+            menu_query += f" ORDER BY c.name {order}"
+        elif sort_by == 'item_name':
+            menu_query += f" ORDER BY mi.name {order}"
+        cursor.execute(menu_query)
         menu_items = cursor.fetchall()
+        session['last_query'] = menu_query
         
-        cursor.execute("""
+        # Orders with sorting
+        order_query = """
             SELECT o.*, c.name AS customer_name, r.name AS restaurant_name
             FROM Orders o
             LEFT JOIN Customers c ON o.customer_id = c.customer_id
             LEFT JOIN Restaurants r ON o.restaurant_id = r.restaurant_id
-            ORDER BY o.order_date DESC
-        """)
+        """
+        if sort_by == 'order_amount':
+            order_query += f" ORDER BY o.total_amount {order}"
+        elif sort_by == 'order_status':
+            order_query += f" ORDER BY o.status {order}"
+        elif sort_by == 'order_date':
+            order_query += f" ORDER BY o.order_date {order}"
+        else:
+            order_query += " ORDER BY o.order_date DESC"
+        cursor.execute(order_query)
         orders = cursor.fetchall()
+        session['last_query'] = order_query
         
-        cursor.execute("SELECT * FROM Deliveries")
+        # Deliveries with sorting
+        delivery_query = "SELECT * FROM Deliveries"
+        if sort_by == 'delivery_status':
+            delivery_query += f" ORDER BY delivery_status {order}"
+        elif sort_by == 'driver_name':
+            delivery_query += f" ORDER BY driver_name {order}"
+        cursor.execute(delivery_query)
         deliveries = cursor.fetchall()
+        session['last_query'] = delivery_query
+        
+        # GROUP BY queries
+        grouped_data = None
+        if group_by == 'restaurant':
+            cursor.execute("""
+                SELECT r.name AS restaurant_name, COUNT(mi.item_id) AS item_count, 
+                       AVG(mi.price) AS avg_price, MIN(mi.price) AS min_price, 
+                       MAX(mi.price) AS max_price
+                FROM Restaurants r
+                LEFT JOIN Menu_Items mi ON r.restaurant_id = mi.restaurant_id
+                GROUP BY r.restaurant_id, r.name
+                ORDER BY item_count DESC
+            """)
+            grouped_data = cursor.fetchall()
+            session['last_query'] = "SELECT r.name, COUNT(mi.item_id), AVG(mi.price), MIN(mi.price), MAX(mi.price) FROM Restaurants r LEFT JOIN Menu_Items mi ON r.restaurant_id = mi.restaurant_id GROUP BY r.restaurant_id, r.name ORDER BY COUNT(mi.item_id) DESC"
+        elif group_by == 'category':
+            cursor.execute("""
+                SELECT c.name AS category_name, COUNT(mi.item_id) AS item_count,
+                       AVG(mi.price) AS avg_price, MIN(mi.price) AS min_price,
+                       MAX(mi.price) AS max_price
+                FROM Categories c
+                LEFT JOIN Menu_Items mi ON c.category_id = mi.category_id
+                GROUP BY c.category_id, c.name
+                ORDER BY item_count DESC
+            """)
+            grouped_data = cursor.fetchall()
+            session['last_query'] = "SELECT c.name, COUNT(mi.item_id), AVG(mi.price), MIN(mi.price), MAX(mi.price) FROM Categories c LEFT JOIN Menu_Items mi ON c.category_id = mi.category_id GROUP BY c.category_id, c.name ORDER BY COUNT(mi.item_id) DESC"
+        elif group_by == 'delivery_status':
+            cursor.execute("""
+                SELECT o.status AS order_status, COUNT(o.order_id) AS order_count,
+                       SUM(o.total_amount) AS total_revenue, AVG(o.total_amount) AS avg_order_value
+                FROM Orders o
+                GROUP BY o.status
+                ORDER BY order_count DESC
+            """)
+            grouped_data = cursor.fetchall()
+            session['last_query'] = "SELECT o.status, COUNT(o.order_id), SUM(o.total_amount), AVG(o.total_amount) FROM Orders o GROUP BY o.status ORDER BY COUNT(o.order_id) DESC"
+        elif group_by == 'customer_orders':
+            cursor.execute("""
+                SELECT c.name AS customer_name, COUNT(o.order_id) AS order_count,
+                       SUM(o.total_amount) AS total_spent, AVG(o.total_amount) AS avg_order_value
+                FROM Customers c
+                LEFT JOIN Orders o ON c.customer_id = o.customer_id
+                GROUP BY c.customer_id, c.name
+                HAVING order_count > 0
+                ORDER BY total_spent DESC
+            """)
+            grouped_data = cursor.fetchall()
+            session['last_query'] = "SELECT c.name, COUNT(o.order_id), SUM(o.total_amount), AVG(o.total_amount) FROM Customers c LEFT JOIN Orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name HAVING COUNT(o.order_id) > 0 ORDER BY SUM(o.total_amount) DESC"
         
         cursor.close()
         conn.close()
@@ -68,6 +157,10 @@ def index():
                              menu_items=menu_items,
                              orders=orders,
                              deliveries=deliveries,
+                             grouped_data=grouped_data,
+                             sort_by=sort_by,
+                             order=order,
+                             group_by=group_by,
                              last_query=session.get('last_query', ''))
     return "Error connecting to the database."
 

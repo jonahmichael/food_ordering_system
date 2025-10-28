@@ -404,6 +404,68 @@
         .scroll-table {
             overflow-x: auto;
         }
+        
+        /* Filter Section */
+        .filter-section {
+            background: #fafafa;
+            padding: 20px 30px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .filter-form {
+            max-width: 100%;
+        }
+        
+        .filter-row {
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            flex: 1;
+            min-width: 180px;
+        }
+        
+        .filter-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #555;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        
+        .filter-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            transition: border-color 0.2s;
+        }
+        
+        .filter-group select:focus {
+            outline: none;
+            border-color: #2c3e50;
+        }
+        
+        /* Grouped Data Section */
+        .grouped-data-section {
+            padding: 30px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .section-title {
+            font-size: 1.4em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-weight: 600;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #2c3e50;
+        }
     </style>
 </head>
 <body>
@@ -422,6 +484,119 @@
 
     <div class="container">
         <h1>Food Ordering System</h1>
+        
+        <!-- Sorting and Grouping Controls -->
+        <div class="filter-section">
+            <form method="GET" action="/" class="filter-form">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="sort_by">Sort By:</label>
+                        <select name="sort_by" id="sort_by" onchange="this.form.submit()">
+                            <option value="default" {% if sort_by == 'default' %}selected{% endif %}>Default</option>
+                            <option value="price" {% if sort_by == 'price' %}selected{% endif %}>Price</option>
+                            <option value="restaurant" {% if sort_by == 'restaurant' %}selected{% endif %}>Restaurant</option>
+                            <option value="category" {% if sort_by == 'category' %}selected{% endif %}>Category</option>
+                            <option value="item_name" {% if sort_by == 'item_name' %}selected{% endif %}>Item Name</option>
+                            <option value="restaurant_name" {% if sort_by == 'restaurant_name' %}selected{% endif %}>Restaurant Name</option>
+                            <option value="rating" {% if sort_by == 'rating' %}selected{% endif %}>Rating</option>
+                            <option value="order_amount" {% if sort_by == 'order_amount' %}selected{% endif %}>Order Amount</option>
+                            <option value="order_status" {% if sort_by == 'order_status' %}selected{% endif %}>Order Status</option>
+                            <option value="order_date" {% if sort_by == 'order_date' %}selected{% endif %}>Order Date</option>
+                            <option value="delivery_status" {% if sort_by == 'delivery_status' %}selected{% endif %}>Delivery Status</option>
+                            <option value="driver_name" {% if sort_by == 'driver_name' %}selected{% endif %}>Driver Name</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="order">Order:</label>
+                        <select name="order" id="order" onchange="this.form.submit()">
+                            <option value="ASC" {% if order == 'ASC' %}selected{% endif %}>Ascending ↑</option>
+                            <option value="DESC" {% if order == 'DESC' %}selected{% endif %}>Descending ↓</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="group_by">Group By:</label>
+                        <select name="group_by" id="group_by" onchange="this.form.submit()">
+                            <option value="none" {% if group_by == 'none' %}selected{% endif %}>None</option>
+                            <option value="restaurant" {% if group_by == 'restaurant' %}selected{% endif %}>Restaurant</option>
+                            <option value="category" {% if group_by == 'category' %}selected{% endif %}>Category</option>
+                            <option value="delivery_status" {% if group_by == 'delivery_status' %}selected{% endif %}>Order Status</option>
+                            <option value="customer_orders" {% if group_by == 'customer_orders' %}selected{% endif %}>Customer Orders</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <a href="/" class="btn btn-secondary" style="margin-top: 24px;">Reset Filters</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Grouped Data Display -->
+        {% if grouped_data %}
+        <div class="grouped-data-section">
+            <h2 class="section-title">Grouped Results</h2>
+            <table>
+                <thead>
+                    <tr>
+                        {% if group_by == 'restaurant' %}
+                            <th>Restaurant Name</th>
+                            <th>Item Count</th>
+                            <th>Avg Price (₹)</th>
+                            <th>Min Price (₹)</th>
+                            <th>Max Price (₹)</th>
+                        {% elif group_by == 'category' %}
+                            <th>Category Name</th>
+                            <th>Item Count</th>
+                            <th>Avg Price (₹)</th>
+                            <th>Min Price (₹)</th>
+                            <th>Max Price (₹)</th>
+                        {% elif group_by == 'delivery_status' %}
+                            <th>Order Status</th>
+                            <th>Order Count</th>
+                            <th>Total Revenue (₹)</th>
+                            <th>Avg Order Value (₹)</th>
+                        {% elif group_by == 'customer_orders' %}
+                            <th>Customer Name</th>
+                            <th>Order Count</th>
+                            <th>Total Spent (₹)</th>
+                            <th>Avg Order Value (₹)</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in grouped_data %}
+                    <tr>
+                        {% if group_by == 'restaurant' %}
+                            <td>{{ row.restaurant_name }}</td>
+                            <td>{{ row.item_count }}</td>
+                            <td>₹{{ "%.2f"|format(row.avg_price if row.avg_price else 0) }}</td>
+                            <td>₹{{ "%.2f"|format(row.min_price if row.min_price else 0) }}</td>
+                            <td>₹{{ "%.2f"|format(row.max_price if row.max_price else 0) }}</td>
+                        {% elif group_by == 'category' %}
+                            <td>{{ row.category_name }}</td>
+                            <td>{{ row.item_count }}</td>
+                            <td>₹{{ "%.2f"|format(row.avg_price if row.avg_price else 0) }}</td>
+                            <td>₹{{ "%.2f"|format(row.min_price if row.min_price else 0) }}</td>
+                            <td>₹{{ "%.2f"|format(row.max_price if row.max_price else 0) }}</td>
+                        {% elif group_by == 'delivery_status' %}
+                            <td><span class="status-badge status-{{ row.order_status|lower|replace(' ', '-') }}">{{ row.order_status }}</span></td>
+                            <td>{{ row.order_count }}</td>
+                            <td>₹{{ "%.2f"|format(row.total_revenue if row.total_revenue else 0) }}</td>
+                            <td>₹{{ "%.2f"|format(row.avg_order_value if row.avg_order_value else 0) }}</td>
+                        {% elif group_by == 'customer_orders' %}
+                            <td>{{ row.customer_name }}</td>
+                            <td>{{ row.order_count }}</td>
+                            <td>₹{{ "%.2f"|format(row.total_spent if row.total_spent else 0) }}</td>
+                            <td>₹{{ "%.2f"|format(row.avg_order_value if row.avg_order_value else 0) }}</td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
         
         <!-- Tab Navigation -->
         <div class="tab-nav">
