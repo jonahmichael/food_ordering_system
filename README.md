@@ -1,272 +1,177 @@
-# Food Ordering System - Database Management System
+# Food Ordering System - Advanced DBMS Project
 
-A comprehensive food ordering system built with Flask and MySQL, demonstrating advanced database operations including CRUD, search, filtering, sorting, and grouping with real-time SQL query display.
+Welcome to the Food Ordering System, a comprehensive web application built with **Flask** and **MySQL**. This project is designed as an educational tool to demonstrate a wide range of advanced Database Management System (DBMS) operations in a real-world context.
 
-**Created by: Jonah - BTech 2nd Year**
+The standout feature is a **live SQL query display**, which shows the exact SQL command executed for every action you perform—from searching and filtering to creating and updating records. This provides immediate insight into how front-end interactions translate into database queries.
+
+
+<img width="1898" height="873" alt="image" src="https://github.com/user-attachments/assets/1ed05178-f6a8-409e-b81f-73da0ebdc352" />
+<img width="1832" height="814" alt="image" src="https://github.com/user-attachments/assets/69eb89ef-a294-4325-a78d-2c3246c0cbe3" />
 
 ---
 
-## Features Overview
+## Key Features
 
-### Core Database Operations
-- **Complete CRUD Operations** - Create, Read, Update, Delete for all 7 entities
-- **Advanced Search** - Full-text search using SQL `LIKE` clause with wildcards
-- **Smart Filtering** - Multi-select filters using SQL `IN` clause for cuisines and categories
-- **Dynamic Sorting** - Sort by multiple fields with ascending/descending order using `ORDER BY`
-- **Data Grouping & Analytics** - Aggregate functions with `GROUP BY` (COUNT, AVG, MIN, MAX, SUM)
-- **Real-time SQL Display** - View the exact SQL query executed for every operation in a fixed display box
+-   **Full CRUD Functionality**: Create, Read, Update, and Delete operations for all database tables (Restaurants, Menu Items, Customers, Orders, etc.).
+-   **Advanced Search & Filtering**:
+    -   Full-text search across multiple fields using the SQL `LIKE` operator.
+    -   Filter data by multiple criteria (e.g., cuisine, category) using the SQL `IN` clause.
+-   **Dynamic Sorting**: Sort tables by various columns in ascending or descending order (`ORDER BY`).
+-   **Data Aggregation and Analytics**: Perform complex analysis using `GROUP BY` with aggregate functions (`COUNT`, `AVG`, `SUM`, etc.) to generate insights like:
+    -   Restaurant menu statistics (item count, average price).
+    -   Customer spending habits.
+    -   Order status summaries.
+-   **Real-time SQL Query Display**: A unique UI component shows the generated SQL query for every database interaction, offering a powerful learning tool.
+-   **Database Initialization**: A one-click utility to drop, create, and populate the entire database with a rich set of Indian-themed sample data.
 
-### Entities Managed
-- **Customers** (22 records) - User profiles with authentication
-- **Restaurants** (22 records) - Restaurant information with ratings and cuisine types
-- **Categories** (23 records) - Food item categories
-- **Menu Items** (36 records) - Food items with pricing and descriptions
-- **Orders** (22 records) - Customer orders with status tracking
-- **Deliveries** (20 records) - Delivery tracking with driver information
-- **Order Items** - Junction table linking orders to menu items
+---
 
-### User Interface
-- Clean, professional, minimalistic design without emojis
-- Compact filter controls with inline checkboxes
-- Tab-based navigation for different entities
-- Inline editing without page refresh
-- Real-time SQL query display box (bottom-right, fixed position)
-- Indian currency formatting (₹)
-- Status badges for order and delivery tracking
-- Clickable watermark linking to GitHub
+## Technology Stack
+
+| Component           | Technology / Library       |
+| ------------------- | -------------------------- |
+| **Backend Framework** | Flask                      |
+| **Database**        | MySQL 8.0+                 |
+| **Python Connector**  | `mysql-connector-python`   |
+| **Frontend**        | HTML, CSS, Vanilla JavaScript |
+| **Templating Engine** | Jinja2                     |
 
 ---
 
 ## Getting Started
 
+Follow these steps to get the project running on your local machine.
+
 ### Prerequisites
-- Python 3.8 or higher
-- MySQL Server 8.0 or higher
-- pip (Python package manager)
 
-### Installation Steps
+-   Python 3.8 or newer
+-   MySQL Server (Community Edition 8.0+ is recommended)
 
-#### 1. Clone or Download the Project
+
+### 1. Clone the Repository
+
+First, navigate to a directory where you want to store the project (e.g., your Desktop or a dedicated 'projects' folder). Then, clone the repository using Git.
+
 ```bash
-cd "C:\Users\JONAH MICHAEL\OneDrive\Desktop\Semester 3\TA-2\DBMS"
+# Navigate to a general-purpose folder, for example:
+cd C:\Users\YourUsername\Desktop
+
+# Clone the project repository
+git clone https://github.com/jonahmichael/food_ordering_system.git
+
+# Move into the newly created project directory
+cd food_ordering_system
 ```
 
-#### 2. Install Python Dependencies
-```bash
+### 2. Install Dependencies
+
+Install the necessary Python packages using pip.
 pip install flask mysql-connector-python
-```
 
-Or use the requirements file:
-```bash
-pip install -r requirements.txt
-```
+### 3. Set Up the Database
 
-#### 3. Set Up MySQL Database
-```bash
-mysql -u root -p < setup_database.sql
-```
+This project comes with a SQL script (`setup_database.sql`) that creates the database, defines the schema, and populates it with sample data.
 
-Or manually in MySQL:
-```sql
+**Important:** Make sure your MySQL service is running before proceeding.
+
+You can run the script from the MySQL command line:```bash
+# Log in to MySQL (you will be prompted for your root password)
+mysql -u root -p
+
+# In the MySQL prompt, run the setup script
 source setup_database.sql;
+
+# Exit the MySQL prompt
+exit
 ```
 
-#### 4. Configure Database Connection
-Edit `app.py` and update your MySQL credentials:
+### 4. Configure the Database Connection
+
+Open the `app.py` file in your code editor and find the database connection block. **Update the `password`** with your MySQL root password.
+
 ```python
-conn = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="your_password",  # Change this
-    database="food_ordering_system"
-)
+# app.py
+
+def get_db_connection():
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="your_mysql_password",  # <--- CHANGE THIS
+        database="food_ordering_system"
+    )
+    return conn
 ```
 
-#### 5. Run the Application
+### 5. Run the Flask Application
+
+With the database ready and the connection configured, you can now run the web server.
+
 ```bash
 python app.py
 ```
 
-#### 6. Access the Application
-Open your browser and navigate to:
-```
-http://127.0.0.1:5000
-```
+You should see output indicating that the server is running, typically on `http://127.0.0.1:5000`.
 
-#### 7. Initialize Sample Data
-- Click the **"Initialize DB"** tab
-- Click **"Initialize Database"** button
-- The database will be populated with 20+ Indian-themed dummy records
+### 6. Access the Application
+
+Open your web browser and navigate to:
+**[http://127.0.0.1:5000](http://127.0.0.1:5000)**
+
+You should now see the Food Ordering System interface, fully populated with data. Enjoy exploring its features!
 
 ---
 
-## SQL Operations Demonstrated
+## DBMS Concepts Demonstrated
 
-### 1. SELECT with WHERE and LIKE (Search)
-```sql
--- Search for menu items, restaurants, or descriptions
-SELECT mi.*, r.name AS restaurant_name, c.name AS category_name
-FROM Menu_Items mi
-LEFT JOIN Restaurants r ON mi.restaurant_id = r.restaurant_id
-LEFT JOIN Categories c ON mi.category_id = c.category_id
-WHERE mi.name LIKE '%pizza%' 
-   OR r.name LIKE '%pizza%' 
-   OR mi.description LIKE '%pizza%'
-```
+This project serves as a practical demonstration of the following core DBMS concepts:
 
-### 2. IN Clause for Multiple Filters
-```sql
--- Filter by multiple cuisines and categories
-SELECT mi.*, r.name, c.name
-FROM Menu_Items mi
-JOIN Restaurants r ON mi.restaurant_id = r.restaurant_id
-JOIN Categories c ON mi.category_id = c.category_id
-WHERE r.cuisine_type IN ('Indian', 'Chinese', 'Italian')
-  AND c.name IN ('Appetizers', 'Main Course', 'Beverages')
-```
+#### 1. Advanced `SELECT` Queries
+-   **Filtering (`WHERE`)**: Used in search functionality with `LIKE` and in filters with `IN`.
+-   **Sorting (`ORDER BY`)**: Used for dynamic sorting of table data by `ASC` or `DESC`.
+-   **Joining Tables (`JOIN`)**: `LEFT JOIN` and `INNER JOIN` are used extensively to combine data from multiple tables (e.g., showing a menu item with its restaurant and category names).
 
-### 3. ORDER BY with ASC/DESC
-```sql
--- Sort menu items by price (descending)
-SELECT * FROM Menu_Items ORDER BY price DESC
+#### 2. Data Aggregation (`GROUP BY`)
+-   Used to group rows that have the same values into summary rows.
+-   Paired with aggregate functions like `COUNT()`, `AVG()`, `SUM()`, `MIN()`, `MAX()` to provide analytical insights.
+-   The `HAVING` clause is used to filter these groups (e.g., `HAVING order_count > 0`).
 
--- Sort restaurants by rating (ascending)
-SELECT * FROM Restaurants ORDER BY rating ASC
+#### 3. Data Definition Language (DDL)
+-   The `setup_database.sql` script shows the use of `CREATE TABLE` to define the entire database schema from scratch.
 
--- Sort by restaurant name
-SELECT * FROM Menu_Items mi
-JOIN Restaurants r ON mi.restaurant_id = r.restaurant_id
-ORDER BY r.name ASC
-```
+#### 4. Data Manipulation Language (DML)
+-   **`INSERT`**: Creating new records in every table.
+-   **`UPDATE`**: Modifying existing records.
+-   **`DELETE`**: Removing records from the database.
 
-### 4. GROUP BY with Aggregate Functions
-
-#### Restaurant Analytics
-```sql
-SELECT r.name AS restaurant_name,
-       COUNT(mi.item_id) AS item_count,
-       AVG(mi.price) AS avg_price,
-       MIN(mi.price) AS min_price,
-       MAX(mi.price) AS max_price
-FROM Restaurants r
-LEFT JOIN Menu_Items mi ON r.restaurant_id = mi.restaurant_id
-GROUP BY r.restaurant_id, r.name
-ORDER BY item_count DESC
-```
-
-#### Category Analytics
-```sql
-SELECT c.name AS category_name,
-       COUNT(mi.item_id) AS item_count,
-       AVG(mi.price) AS avg_price,
-       MIN(mi.price) AS min_price,
-       MAX(mi.price) AS max_price
-FROM Categories c
-LEFT JOIN Menu_Items mi ON c.category_id = mi.category_id
-GROUP BY c.category_id, c.name
-ORDER BY item_count DESC
-```
-
-#### Order Status Analytics
-```sql
-SELECT o.status AS order_status,
-       COUNT(o.order_id) AS order_count,
-       SUM(o.total_amount) AS total_revenue,
-       AVG(o.total_amount) AS avg_order_value
-FROM Orders o
-GROUP BY o.status
-ORDER BY order_count DESC
-```
-
-#### Customer Spending Analytics
-```sql
-SELECT c.name AS customer_name,
-       COUNT(o.order_id) AS order_count,
-       SUM(o.total_amount) AS total_spent,
-       AVG(o.total_amount) AS avg_order_value
-FROM Customers c
-LEFT JOIN Orders o ON c.customer_id = o.customer_id
-GROUP BY c.customer_id, c.name
-HAVING order_count > 0
-ORDER BY total_spent DESC
-```
-
-### 5. JOIN Operations
-```sql
--- Multiple table joins
-SELECT mi.*, 
-       r.name AS restaurant_name, 
-       r.cuisine_type,
-       c.name AS category_name
-FROM Menu_Items mi
-LEFT JOIN Restaurants r ON mi.restaurant_id = r.restaurant_id
-LEFT JOIN Categories c ON mi.category_id = c.category_id
-
--- Orders with customer and restaurant details
-SELECT o.*, 
-       c.name AS customer_name, 
-       r.name AS restaurant_name
-FROM Orders o
-LEFT JOIN Customers c ON o.customer_id = c.customer_id
-LEFT JOIN Restaurants r ON o.restaurant_id = r.restaurant_id
-```
-
-### 6. CRUD Operations
-
-#### INSERT (Create)
-```sql
--- Add new customer
-INSERT INTO Customers (name, email, phone, password, address)
-VALUES ('Amit Kumar', 'amit@email.com', '9876543210', 'pass123', 'New Delhi')
-
--- Add new menu item
-INSERT INTO Menu_Items (restaurant_id, category_id, name, description, price)
-VALUES (1, 2, 'Paneer Tikka', 'Grilled cottage cheese with spices', 250.00)
-```
-
-#### UPDATE
-```sql
--- Update customer information
-UPDATE Customers 
-SET name='Amit Kumar Singh', phone='9876543211', address='Delhi NCR'
-WHERE customer_id=1
-
--- Update menu item price
-UPDATE Menu_Items 
-SET price=299.00, description='Delicious butter chicken with naan'
-WHERE item_id=5
-```
-
-#### DELETE
-```sql
--- Delete customer
-DELETE FROM Customers WHERE customer_id=10
-
--- Delete menu item
-DELETE FROM Menu_Items WHERE item_id=15
-```
+#### 5. Database Design & Integrity
+-   **Primary Keys**: Each table has a unique `AUTO_INCREMENT` primary key.
+-   **Foreign Keys**: Enforce referential integrity between tables (e.g., linking an `Order` to a `Customer`).
+-   **Constraints**: Use of `NOT NULL` and `UNIQUE` constraints to ensure data quality.
+-   **Cascade Operations**: `ON DELETE CASCADE` is used to automatically delete dependent records (e.g., deleting an order also deletes its associated order items).
 
 ---
 
 ## Database Schema
 
-### Table Structure
+The database consists of 7 interconnected tables.
 
-#### 1. Customers
+<img width="1663" height="748" alt="er-diagram" src="https://github.com/user-attachments/assets/364c1fca-7cbc-4161-a295-fb2a4e9c8e36" />
+
+<details>
+<summary>Click to view Database Schema SQL</summary>
+
 ```sql
+-- Customers: Stores user information.
 CREATE TABLE Customers (
     customer_id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     phone VARCHAR(15),
     password VARCHAR(255) NOT NULL,
-    address TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    address TEXT
 );
-```
 
-#### 2. Restaurants
-```sql
+-- Restaurants: Stores restaurant details.
 CREATE TABLE Restaurants (
     restaurant_id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
@@ -275,18 +180,14 @@ CREATE TABLE Restaurants (
     cuisine_type VARCHAR(50),
     rating DECIMAL(2,1)
 );
-```
 
-#### 3. Categories
-```sql
+-- Categories: Stores food categories (e.g., Appetizer, Main Course).
 CREATE TABLE Categories (
     category_id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(50) NOT NULL UNIQUE
 );
-```
 
-#### 4. Menu_Items
-```sql
+-- Menu_Items: Stores individual food items.
 CREATE TABLE Menu_Items (
     item_id INT PRIMARY KEY AUTO_INCREMENT,
     restaurant_id INT,
@@ -297,10 +198,8 @@ CREATE TABLE Menu_Items (
     FOREIGN KEY (restaurant_id) REFERENCES Restaurants(restaurant_id) ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES Categories(category_id) ON DELETE SET NULL
 );
-```
 
-#### 5. Orders
-```sql
+-- Orders: Stores customer order information.
 CREATE TABLE Orders (
     order_id INT PRIMARY KEY AUTO_INCREMENT,
     customer_id INT,
@@ -311,22 +210,17 @@ CREATE TABLE Orders (
     FOREIGN KEY (customer_id) REFERENCES Customers(customer_id) ON DELETE CASCADE,
     FOREIGN KEY (restaurant_id) REFERENCES Restaurants(restaurant_id) ON DELETE CASCADE
 );
-```
 
-#### 6. Deliveries
-```sql
+-- Deliveries: Tracks delivery status for each order.
 CREATE TABLE Deliveries (
     delivery_id INT PRIMARY KEY AUTO_INCREMENT,
     order_id INT UNIQUE,
     delivery_person_name VARCHAR(100),
     delivery_status VARCHAR(50) DEFAULT 'Pending',
-    estimated_time VARCHAR(50),
     FOREIGN KEY (order_id) REFERENCES Orders(order_id) ON DELETE CASCADE
 );
-```
 
-#### 7. Order_Items
-```sql
+-- Order_Items: A junction table linking Orders to the Menu_Items they contain.
 CREATE TABLE Order_Items (
     order_item_id INT PRIMARY KEY AUTO_INCREMENT,
     order_id INT,
@@ -337,242 +231,9 @@ CREATE TABLE Order_Items (
     FOREIGN KEY (item_id) REFERENCES Menu_Items(item_id) ON DELETE CASCADE
 );
 ```
+</details>
 
 ---
 
-## Application Routes
-
-### Main Routes
-- `GET /` - Main application page with all tabs and filters
-
-### Customer Operations
-- `POST /add_customer` - Add new customer
-- `POST /update_customer/<id>` - Update customer details
-- `GET /delete_customer/<id>` - Delete customer
-
-### Restaurant Operations
-- `POST /add_restaurant` - Add new restaurant
-- `POST /update_restaurant/<id>` - Update restaurant details
-- `GET /delete_restaurant/<id>` - Delete restaurant
-
-### Category Operations
-- `POST /add_category` - Add new category
-- `POST /update_category/<id>` - Update category name
-- `GET /delete_category/<id>` - Delete category
-
-### Menu Item Operations
-- `POST /add_menu_item` - Add new menu item
-- `POST /update_menu_item/<id>` - Update menu item
-- `GET /delete_menu_item/<id>` - Delete menu item
-
-### Order Operations
-- `POST /add_order` - Create new order
-- `POST /update_order/<id>` - Update order status/amount
-- `GET /delete_order/<id>` - Delete order
-
-### Delivery Operations
-- `POST /add_delivery` - Add delivery information
-- `POST /update_delivery/<id>` - Update delivery status
-- `GET /delete_delivery/<id>` - Delete delivery record
-
-### Utility Routes
-- `GET /init_db` - Initialize database with 20+ dummy records
-
----
-
-## Technology Stack
-
-| Component | Technology |
-|-----------|-----------|
-| **Backend Framework** | Flask 3.1.2 |
-| **Database** | MySQL 8.0 |
-| **Database Driver** | mysql-connector-python |
-| **Template Engine** | Jinja2 |
-| **Frontend** | HTML5, CSS3, JavaScript (Vanilla) |
-| **Session Management** | Flask Sessions |
-
----
-
-## Project Structure
-
-```
-DBMS/
-│
-├── app.py                    # Flask application with all routes and logic
-├── requirements.txt          # Python dependencies
-├── setup_database.sql        # Database schema and structure
-├── README.md                 # Project documentation (this file)
-│
-└── templates/
-    └── index.html           # Main UI with SQL query display
-```
-
----
-
-## Key Features Explained
-
-### 1. Real-time SQL Query Display
-Every database operation displays the actual SQL query executed:
-- Fixed position box at bottom-right
-- Dark theme for better visibility
-- Updates after each CRUD operation
-- Shows search, filter, sort, and group queries
-
-### 2. Advanced Search
-- Search across menu items, restaurants, and descriptions
-- Uses SQL LIKE with wildcards (`%search%`)
-- Case-insensitive matching
-- Real-time query display
-
-### 3. Multi-select Filters
-- Cuisine type filter (checkbox-based)
-- Category filter (checkbox-based)
-- Uses SQL IN clause for efficient filtering
-- Combines multiple filters with AND logic
-
-### 4. Dynamic Sorting
-- Sort by: Price, Restaurant, Category, Item Name
-- Order: Ascending or Descending
-- Uses SQL ORDER BY clause
-- Instant results with query display
-
-### 5. Data Analytics (GROUP BY)
-Four grouping options:
-- **By Restaurant**: Item count, avg/min/max prices
-- **By Category**: Item count, price statistics
-- **By Delivery Status**: Order count, revenue, avg order value
-- **By Customer Orders**: Customer spending analytics
-
-### 6. Inline Editing
-- Click Edit button on any record
-- Form appears inline in the table
-- Save or Cancel without page reload
-- Immediate SQL query feedback
-
----
-
-## Sample Data Included
-
-### Indian Theme
-- **Restaurants**: Sagar Ratna, Pind Balluchi, Paradise Biryani, Haldiram's, etc.
-- **Menu Items**: Paneer Tikka, Butter Chicken, Biryani, Masala Dosa, etc.
-- **Cuisine Types**: Indian, Chinese, Italian, American, Continental, etc.
-- **Categories**: Appetizers, Main Course, Beverages, Desserts, Breakfast, etc.
-
-### Pricing
-- All prices in Indian Rupees (₹)
-- Range: ₹80 - ₹899
-- Realistic pricing for different food items
-
----
-
-## Educational Purpose
-
-This project demonstrates:
-- **Database Design**: Normalization, foreign keys, referential integrity
-- **SQL Proficiency**: SELECT, INSERT, UPDATE, DELETE with advanced clauses
-- **Query Optimization**: JOIN operations, aggregate functions, filtering
-- **Web Integration**: Flask routes, Jinja2 templates, session management
-- **Security**: Prepared statements to prevent SQL injection
-- **UI/UX Design**: Clean, professional interface with real-time feedback
-
-### DBMS Concepts Covered
-- Entity-Relationship modeling
-- Primary and foreign key constraints
-- CASCADE and SET NULL operations
-- Complex queries with multiple JOINs
-- Aggregate functions (COUNT, AVG, MIN, MAX, SUM)
-- GROUP BY and HAVING clauses
-- WHERE clause with LIKE and IN operators
-- ORDER BY with ASC/DESC
-- Parameterized queries for security
-
----
-
-## Developer Information
-
-**Developer**: Jonah  
-**Academic Year**: BTech 2nd Year  
-**Course**: Database Management Systems (DBMS)  
-**Assignment**: TA-2  
-**Semester**: 3  
-
-**GitHub**: [@jonahmichael](https://github.com/jonahmichael)  
-**Repository**: [food_ordering_system](https://github.com/jonahmichael/food_ordering_system)
-
----
-
-## Notes & Best Practices
-
-### Security Considerations
-- Uses parameterized queries to prevent SQL injection
-- Password fields masked in SQL query display
-- Session-based query tracking
-- Input validation on all forms
-
-### Code Quality
-- Clean, readable code structure
-- Comments for complex operations
-- Consistent naming conventions
-- Modular route design
-
-### Database Integrity
-- Foreign key constraints enabled
-- CASCADE delete for dependent records
-- SET NULL for optional relationships
-- Unique constraints on email and category names
-
-### Performance
-- Indexed foreign keys for faster JOINs
-- Efficient WHERE clauses
-- Aggregate functions at database level
-- Connection pooling with proper closure
-
----
-
-## Future Enhancements (Optional)
-
-- User authentication with password hashing
-- Role-based access control
-- Shopping cart functionality
-- Payment integration
-- Order history and tracking
-- Restaurant dashboard
-- Real-time notifications
-- Mobile responsive improvements
-- Export data to CSV/PDF
-- Advanced analytics charts
-
----
-
-## License
-
-This project is created for educational purposes as part of DBMS coursework (TA-2).
-
----
-
-## Troubleshooting
-
-### Database Connection Issues
-```python
-# Check MySQL service is running
-# Verify credentials in app.py
-# Ensure database 'food_ordering_system' exists
-```
-
-### Port Already in Use
-```bash
-# Change port in app.py:
-if __name__ == '__main__':
-    app.run(debug=True, port=5001)
-```
-
-### Missing Dependencies
-```bash
-pip install --upgrade flask mysql-connector-python
-```
-
----
-
-**Last Updated**: October 28, 2025  
-**Version**: 2.0 (Simplified with SQL Query Display)
+**Developed by Jonah Michael**
+*B.Tech 2nd Year - DBMS Project*
