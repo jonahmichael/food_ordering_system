@@ -21,6 +21,26 @@ def get_db_connection():
         print(f"Error connecting to MySQL: {e}")
         return None
 
+def format_query_for_display(query, params=None):
+    """Format SQL query with parameters for display purposes"""
+    if params is None or len(params) == 0:
+        return query
+    
+    display_query = query
+    for param in params:
+        if isinstance(param, str):
+            # Escape single quotes and wrap in quotes
+            param_str = f"'{param.replace(chr(39), chr(39)+chr(39))}'"
+        elif param is None:
+            param_str = 'NULL'
+        else:
+            param_str = str(param)
+        
+        # Replace first occurrence of %s with the parameter
+        display_query = display_query.replace('%s', param_str, 1)
+    
+    return display_query
+
 # Home Route - Display Menu
 @app.route('/')
 def index():
@@ -29,14 +49,19 @@ def index():
         cursor = conn.cursor(dictionary=True)
         
         # Get sorting parameters
-        sort_by = request.args.get('sort_by', 'default')
+        sort_by = request.args.get('sort_by', '')
         order = request.args.get('order', 'ASC')
-        group_by = request.args.get('group_by', 'none')
+        group_by = request.args.get('group_by', '')
         
         # Get search and filter parameters
         search_term = request.args.get('search', '').strip()
         cuisine_filter = request.args.getlist('cuisine')
         category_filter = request.args.getlist('category')
+        
+        # Check if there's a recent CRUD operation query that should be preserved
+        preserve_query = session.get('preserve_query', False)
+        last_crud_query = session.get('last_query', '') if preserve_query else None
+        session['preserve_query'] = False  # Reset the flag
         
         # Get all data for different tabs
         cursor.execute("SELECT * FROM Customers")
@@ -103,7 +128,13 @@ def index():
         
         cursor.execute(menu_query, query_params)
         menu_items = cursor.fetchall()
-        session['last_query'] = menu_query % tuple(query_params) if query_params else menu_query
+        
+        # Format query for display
+        if query_params:
+            display_query = format_query_for_display(menu_query, query_params)
+        else:
+            display_query = menu_query
+        session['last_query'] = display_query
         
         # Orders with sorting
         order_query = """
@@ -186,6 +217,9 @@ def index():
         cursor.close()
         conn.close()
         
+        # If there was a CRUD operation, use that query for display
+        display_query = last_crud_query if last_crud_query else session.get('last_query', '')
+        
         return render_template('index.html', 
                              customers=customers,
                              restaurants=restaurants,
@@ -202,7 +236,7 @@ def index():
                              category_filter=category_filter,
                              all_cuisines=all_cuisines,
                              all_categories=all_categories,
-                             last_query=session.get('last_query', ''))
+                             last_query=display_query)
     return "Error connecting to the database."
 
 # ============ CUSTOMERS CRUD ============
@@ -211,13 +245,18 @@ def add_customer():
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        query = f"INSERT INTO Customers (name, email, phone, password, address) VALUES ('{request.form['name']}', '{request.form['email']}', '{request.form['phone']}', '****', '{request.form['address']}')"
-        session['last_query'] = query
-        cursor.execute("""
-            INSERT INTO Customers (name, email, phone, password, address)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (request.form['name'], request.form['email'], request.form['phone'],
-              request.form['password'], request.form['address']))
+        params = (request.form['name'], request.form['email'], request.form['phone'],
+                 request.form['password'], request.form['address'])
+        query = """INSERT INTO Customers (name, email, phone, password, address)
+            VALUES (%s, %s, %s, %s, %s)"""
+        
+        # Format for display (hide password)
+        display_params = (request.form['name'], request.form['email'], request.form['phone'],
+                         '****', request.form['address'])
+        session['last_query'] = format_query_for_display(query, display_params)
+        session['preserve_query'] = True  # Preserve this query after redirect
+        
+        cursor.execute(query, params)
         conn.commit()
         cursor.close()
         conn.close()
@@ -228,14 +267,16 @@ def update_customer(id):
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        query = f"UPDATE Customers SET name='{request.form['name']}', email='{request.form['email']}', phone='{request.form['phone']}', address='{request.form['address']}' WHERE customer_id={id}"
-        session['last_query'] = query
-        cursor.execute("""
-            UPDATE Customers 
+        params = (request.form['name'], request.form['email'], request.form['phone'],
+                 request.form['address'], id)
+        query = """UPDATE Customers 
             SET name=%s, email=%s, phone=%s, address=%s
-            WHERE customer_id=%s
-        """, (request.form['name'], request.form['email'], request.form['phone'],
-              request.form['address'], id))
+            WHERE customer_id=%s"""
+        
+        session['last_query'] = format_query_for_display(query, params)
+        session['preserve_query'] = True
+        session['preserve_query'] = True
+        cursor.execute(query, params)
         conn.commit()
         cursor.close()
         conn.close()
@@ -246,8 +287,11 @@ def delete_customer(id):
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"DELETE FROM Customers WHERE customer_id={id}"
-        cursor.execute("DELETE FROM Customers WHERE customer_id=%s", (id,))
+        query = "DELETE FROM Customers WHERE customer_id=%s"
+        session['last_query'] = format_query_for_display(query, (id,))
+        session['preserve_query'] = True
+        session['preserve_query'] = True
+        cursor.execute(query, (id,))
         conn.commit()
         cursor.close()
         conn.close()
@@ -259,12 +303,14 @@ def add_restaurant():
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"INSERT INTO Restaurants (name, address, phone_number, cuisine_type, rating) VALUES ('{request.form['name']}', '{request.form['address']}', '{request.form['phone_number']}', '{request.form['cuisine_type']}', {request.form['rating']})"
-        cursor.execute("""
-            INSERT INTO Restaurants (name, address, phone_number, cuisine_type, rating)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (request.form['name'], request.form['address'], request.form['phone_number'],
-              request.form['cuisine_type'], request.form['rating']))
+        params = (request.form['name'], request.form['address'], request.form['phone_number'],
+                 request.form['cuisine_type'], request.form['rating'])
+        query = """INSERT INTO Restaurants (name, address, phone_number, cuisine_type, rating)
+            VALUES (%s, %s, %s, %s, %s)"""
+        
+        session['last_query'] = format_query_for_display(query, params)
+        session['preserve_query'] = True
+        cursor.execute(query, params)
         conn.commit()
         cursor.close()
         conn.close()
@@ -275,13 +321,15 @@ def update_restaurant(id):
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"UPDATE Restaurants SET name='{request.form['name']}', address='{request.form['address']}', phone_number='{request.form['phone_number']}', cuisine_type='{request.form['cuisine_type']}', rating={request.form['rating']} WHERE restaurant_id={id}"
-        cursor.execute("""
-            UPDATE Restaurants 
+        params = (request.form['name'], request.form['address'], request.form['phone_number'],
+                 request.form['cuisine_type'], request.form['rating'], id)
+        query = """UPDATE Restaurants 
             SET name=%s, address=%s, phone_number=%s, cuisine_type=%s, rating=%s
-            WHERE restaurant_id=%s
-        """, (request.form['name'], request.form['address'], request.form['phone_number'],
-              request.form['cuisine_type'], request.form['rating'], id))
+            WHERE restaurant_id=%s"""
+        
+        session['last_query'] = format_query_for_display(query, params)
+        session['preserve_query'] = True
+        cursor.execute(query, params)
         conn.commit()
         cursor.close()
         conn.close()
@@ -292,8 +340,10 @@ def delete_restaurant(id):
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"DELETE FROM Restaurants WHERE restaurant_id={id}"
-        cursor.execute("DELETE FROM Restaurants WHERE restaurant_id=%s", (id,))
+        query = "DELETE FROM Restaurants WHERE restaurant_id=%s"
+        session['last_query'] = format_query_for_display(query, (id,))
+        session['preserve_query'] = True
+        cursor.execute(query, (id,))
         conn.commit()
         cursor.close()
         conn.close()
@@ -305,8 +355,11 @@ def add_category():
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"INSERT INTO Categories (name) VALUES ('{request.form['name']}')"
-        cursor.execute("INSERT INTO Categories (name) VALUES (%s)", (request.form['name'],))
+        query = "INSERT INTO Categories (name) VALUES (%s)"
+        params = (request.form['name'],)
+        session['last_query'] = format_query_for_display(query, params)
+        session['preserve_query'] = True
+        cursor.execute(query, params)
         conn.commit()
         cursor.close()
         conn.close()
@@ -317,9 +370,11 @@ def update_category(id):
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"UPDATE Categories SET name='{request.form['name']}' WHERE category_id={id}"
-        cursor.execute("UPDATE Categories SET name=%s WHERE category_id=%s", 
-                      (request.form['name'], id))
+        query = "UPDATE Categories SET name=%s WHERE category_id=%s"
+        params = (request.form['name'], id)
+        session['last_query'] = format_query_for_display(query, params)
+        session['preserve_query'] = True
+        cursor.execute(query, params)
         conn.commit()
         cursor.close()
         conn.close()
@@ -330,8 +385,10 @@ def delete_category(id):
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"DELETE FROM Categories WHERE category_id={id}"
-        cursor.execute("DELETE FROM Categories WHERE category_id=%s", (id,))
+        query = "DELETE FROM Categories WHERE category_id=%s"
+        session['last_query'] = format_query_for_display(query, (id,))
+        session['preserve_query'] = True
+        cursor.execute(query, (id,))
         conn.commit()
         cursor.close()
         conn.close()
@@ -343,12 +400,14 @@ def add_menu_item():
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"INSERT INTO Menu_Items (restaurant_id, name, description, price, image_url, category_id) VALUES ({request.form['restaurant_id']}, '{request.form['name']}', '{request.form['description']}', {request.form['price']}, '{request.form['image_url']}', {request.form['category_id']})"
-        cursor.execute("""
-            INSERT INTO Menu_Items (restaurant_id, name, description, price, image_url, category_id)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (request.form['restaurant_id'], request.form['name'], request.form['description'],
-              request.form['price'], request.form['image_url'], request.form['category_id']))
+        params = (request.form['restaurant_id'], request.form['name'], request.form['description'],
+                 request.form['price'], request.form['image_url'], request.form['category_id'])
+        query = """INSERT INTO Menu_Items (restaurant_id, name, description, price, image_url, category_id)
+            VALUES (%s, %s, %s, %s, %s, %s)"""
+        
+        session['last_query'] = format_query_for_display(query, params)
+        session['preserve_query'] = True
+        cursor.execute(query, params)
         conn.commit()
         cursor.close()
         conn.close()
@@ -359,13 +418,15 @@ def update_menu_item(id):
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"UPDATE Menu_Items SET restaurant_id={request.form['restaurant_id']}, name='{request.form['name']}', description='{request.form['description']}', price={request.form['price']}, image_url='{request.form['image_url']}', category_id={request.form['category_id']} WHERE item_id={id}"
-        cursor.execute("""
-            UPDATE Menu_Items 
+        params = (request.form['restaurant_id'], request.form['name'], request.form['description'],
+                 request.form['price'], request.form['image_url'], request.form['category_id'], id)
+        query = """UPDATE Menu_Items 
             SET restaurant_id=%s, name=%s, description=%s, price=%s, image_url=%s, category_id=%s
-            WHERE item_id=%s
-        """, (request.form['restaurant_id'], request.form['name'], request.form['description'],
-              request.form['price'], request.form['image_url'], request.form['category_id'], id))
+            WHERE item_id=%s"""
+        
+        session['last_query'] = format_query_for_display(query, params)
+        session['preserve_query'] = True
+        cursor.execute(query, params)
         conn.commit()
         cursor.close()
         conn.close()
@@ -376,8 +437,10 @@ def delete_menu_item(id):
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"DELETE FROM Menu_Items WHERE item_id={id}"
-        cursor.execute("DELETE FROM Menu_Items WHERE item_id=%s", (id,))
+        query = "DELETE FROM Menu_Items WHERE item_id=%s"
+        session['last_query'] = format_query_for_display(query, (id,))
+        session['preserve_query'] = True
+        cursor.execute(query, (id,))
         conn.commit()
         cursor.close()
         conn.close()
@@ -389,14 +452,15 @@ def add_order():
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        delivery_id = request.form['delivery_id'] if request.form['delivery_id'] else 'NULL'
-        session['last_query'] = f"INSERT INTO Orders (customer_id, restaurant_id, total_amount, status, delivery_id) VALUES ({request.form['customer_id']}, {request.form['restaurant_id']}, {request.form['total_amount']}, '{request.form['status']}', {delivery_id})"
-        cursor.execute("""
-            INSERT INTO Orders (customer_id, restaurant_id, total_amount, status, delivery_id)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (request.form['customer_id'], request.form['restaurant_id'], 
-              request.form['total_amount'], request.form['status'], 
-              request.form['delivery_id'] if request.form['delivery_id'] else None))
+        delivery_id_val = request.form['delivery_id'] if request.form['delivery_id'] else None
+        params = (request.form['customer_id'], request.form['restaurant_id'], 
+                 request.form['total_amount'], request.form['status'], delivery_id_val)
+        query = """INSERT INTO Orders (customer_id, restaurant_id, total_amount, status, delivery_id)
+            VALUES (%s, %s, %s, %s, %s)"""
+        
+        session['last_query'] = format_query_for_display(query, params)
+        session['preserve_query'] = True
+        cursor.execute(query, params)
         conn.commit()
         cursor.close()
         conn.close()
@@ -407,15 +471,16 @@ def update_order(id):
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        delivery_id = request.form['delivery_id'] if request.form['delivery_id'] else 'NULL'
-        session['last_query'] = f"UPDATE Orders SET customer_id={request.form['customer_id']}, restaurant_id={request.form['restaurant_id']}, total_amount={request.form['total_amount']}, status='{request.form['status']}', delivery_id={delivery_id} WHERE order_id={id}"
-        cursor.execute("""
-            UPDATE Orders 
+        delivery_id_val = request.form['delivery_id'] if request.form['delivery_id'] else None
+        params = (request.form['customer_id'], request.form['restaurant_id'],
+                 request.form['total_amount'], request.form['status'], delivery_id_val, id)
+        query = """UPDATE Orders 
             SET customer_id=%s, restaurant_id=%s, total_amount=%s, status=%s, delivery_id=%s
-            WHERE order_id=%s
-        """, (request.form['customer_id'], request.form['restaurant_id'],
-              request.form['total_amount'], request.form['status'],
-              request.form['delivery_id'] if request.form['delivery_id'] else None, id))
+            WHERE order_id=%s"""
+        
+        session['last_query'] = format_query_for_display(query, params)
+        session['preserve_query'] = True
+        cursor.execute(query, params)
         conn.commit()
         cursor.close()
         conn.close()
@@ -426,7 +491,10 @@ def delete_order(id):
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"DELETE FROM Orders WHERE order_id={id}"
+        query = "DELETE FROM Orders WHERE order_id=%s"
+        session['last_query'] = format_query_for_display(query, (id,))
+        session['preserve_query'] = True
+        cursor.execute(query, (id,))
         cursor.execute("DELETE FROM Orders WHERE order_id=%s", (id,))
         conn.commit()
         cursor.close()
@@ -439,12 +507,14 @@ def add_delivery():
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"INSERT INTO Deliveries (driver_name, driver_phone, delivery_status) VALUES ('{request.form['driver_name']}', '{request.form['driver_phone']}', '{request.form['delivery_status']}')"
-        cursor.execute("""
-            INSERT INTO Deliveries (driver_name, driver_phone, delivery_status)
-            VALUES (%s, %s, %s)
-        """, (request.form['driver_name'], request.form['driver_phone'], 
-              request.form['delivery_status']))
+        params = (request.form['driver_name'], request.form['driver_phone'], 
+                 request.form['delivery_status'])
+        query = """INSERT INTO Deliveries (driver_name, driver_phone, delivery_status)
+            VALUES (%s, %s, %s)"""
+        
+        session['last_query'] = format_query_for_display(query, params)
+        session['preserve_query'] = True
+        cursor.execute(query, params)
         conn.commit()
         cursor.close()
         conn.close()
@@ -455,13 +525,15 @@ def update_delivery(id):
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"UPDATE Deliveries SET driver_name='{request.form['driver_name']}', driver_phone='{request.form['driver_phone']}', delivery_status='{request.form['delivery_status']}' WHERE delivery_id={id}"
-        cursor.execute("""
-            UPDATE Deliveries 
+        params = (request.form['driver_name'], request.form['driver_phone'],
+                 request.form['delivery_status'], id)
+        query = """UPDATE Deliveries 
             SET driver_name=%s, driver_phone=%s, delivery_status=%s
-            WHERE delivery_id=%s
-        """, (request.form['driver_name'], request.form['driver_phone'],
-              request.form['delivery_status'], id))
+            WHERE delivery_id=%s"""
+        
+        session['last_query'] = format_query_for_display(query, params)
+        session['preserve_query'] = True
+        cursor.execute(query, params)
         conn.commit()
         cursor.close()
         conn.close()
@@ -472,8 +544,10 @@ def delete_delivery(id):
     conn = get_db_connection()
     if conn:
         cursor = conn.cursor()
-        session['last_query'] = f"DELETE FROM Deliveries WHERE delivery_id={id}"
-        cursor.execute("DELETE FROM Deliveries WHERE delivery_id=%s", (id,))
+        query = "DELETE FROM Deliveries WHERE delivery_id=%s"
+        session['last_query'] = format_query_for_display(query, (id,))
+        session['preserve_query'] = True
+        cursor.execute(query, (id,))
         conn.commit()
         cursor.close()
         conn.close()
