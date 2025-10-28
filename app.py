@@ -487,6 +487,7 @@ def init_db():
         cursor = conn.cursor()
         
         # Clear existing data (be careful with this in production!)
+        session['last_query'] = "TRUNCATE TABLE Order_Items, Orders, Menu_Items, Deliveries, Categories, Restaurants, Customers; -- Database initialized with 20+ dummy records per table"
         cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
         cursor.execute("TRUNCATE TABLE Order_Items")
         cursor.execute("TRUNCATE TABLE Orders")
