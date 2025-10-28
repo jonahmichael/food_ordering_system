@@ -66,7 +66,9 @@ cd food_ordering_system
 ### 2. Install Dependencies
 
 Install the necessary Python packages using pip.
+```bash
 pip install flask mysql-connector-python
+```
 
 ### 3. Set Up the Database
 
@@ -74,7 +76,8 @@ This project comes with a SQL script (`setup_database.sql`) that creates the dat
 
 **Important:** Make sure your MySQL service is running before proceeding.
 
-You can run the script from the MySQL command line:```bash
+You can run the script from the MySQL command line:
+```bash
 # Log in to MySQL (you will be prompted for your root password)
 mysql -u root -p
 
@@ -153,9 +156,9 @@ This project serves as a practical demonstration of the following core DBMS conc
 
 ## Database Schema
 
-The database consists of 7 interconnected tables.
-
-<img width="1663" height="748" alt="er-diagram" src="https://github.com/user-attachments/assets/364c1fca-7cbc-4161-a295-fb2a4e9c8e36" />
+The database consists of 7 interconnected tables. 
+### CHECK THE ER DIAGRAM FOR REFERENCE
+<img width="2725" height="2100" alt="Untitled diagram-2025-10-28-112642" src="https://github.com/user-attachments/assets/3c2c85e7-508b-4a2d-8905-4615b9119a1a" />
 
 <details>
 <summary>Click to view Database Schema SQL</summary>
